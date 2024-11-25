@@ -1,0 +1,211 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Profissional</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Cadastro de Profissional</h2>
+
+        <!-- Formulário de Cadastro -->
+        <form id="cadastroProfissional" method="POST">
+            <div class="form-group">
+                <label for="nome">Nome</label>
+                <input type="text" class="form-control" id="nome" placeholder="Nome" required>
+            </div>
+
+            <div class="form-group">
+                <label for="especialidade">Especialidade</label>
+                <select class="form-control" id="especialidade" required>
+                    <option value="" disabled selected>Selecione uma especialidade</option>
+                    <!-- Especialidades podem ser carregadas via API -->
+                    <option value="1">Cardiologia</option>
+                    <option value="2">Nutricionista Clínico</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="numeroDocumento">Número do Documento</label>
+                <input type="text" class="form-control" id="numeroDocumento" placeholder="Número do Documento" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Cadastrar</button>
+        </form>
+
+        <!-- Listagem de Profissionais -->
+        <h3 class="mt-5">Profissionais Cadastrados</h3>
+        <table class="table table-striped" id="tabelaProfissionais">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Especialidade</th>
+                    <th>Número do Documento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Profissionais serão listados aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div class="modal" id="modalEdicao" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Profissional</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="nomeEdit">Nome</label>
+                        <input type="text" class="form-control" id="nomeEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="especialidadeEdit">Especialidade</label>
+                        <select class="form-control" id="especialidadeEdit">
+                            <!-- Especialidades serão carregadas aqui -->
+                            <option value="1">Cardiologia</option>
+                            <option value="2">Nutricionista Clínico</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="numeroDocumentoEdit">Número do Documento</label>
+                        <input type="text" class="form-control" id="numeroDocumentoEdit">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary" id="salvarEdicao">Salvar alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        const apiUrl = 'https://localhost:7197/api/Profissional';  
+        const body = {
+                        id: 0,
+                        nome: "string",
+                        tipoDocumento: "string"
+                    };
+        let edit = 1;
+        function carregarProfissionais() {
+            $.get(apiUrl, function (data) {
+                const tbody = $('#tabelaProfissionais tbody');
+                tbody.empty();  // Limpa a tabela antes de adicionar novos dados
+                data.forEach(profissional => {
+                    const tr = $('<tr>').append(
+                        $('<td>').text(edit),
+                        $('<td>').text(profissional.nome),
+                        $('<td>').text(profissional.especialidade.nome),
+                        $('<td>').text(profissional.numeroDocumento),
+                        $('<td>').html(`
+                                <button class="btn btn-info btn-sm" onclick="editarProfissional(${profissional.id})">Editar</button>
+                                <button class="btn btn-danger btn-sm" onclick="excluirProfissional(${profissional.id})">Excluir</button>
+                            `)
+                    );
+                    tbody.append(tr);
+                    edit++;
+                });
+            });
+        }
+
+        $('#cadastroProfissional').submit(function (event) {
+            event.preventDefault();
+
+            const novoProfissional = {
+                nome: $('#nome').val(),
+                especialidadeId: $('#especialidade').val(),
+                especialidade:body,
+                numeroDocumento: $('#numeroDocumento').val()
+            };
+            console.log(novoProfissional);
+            $.ajax({
+                url: apiUrl,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(novoProfissional),
+                success: function () {
+                    alert('Profissional cadastrado com sucesso!');
+                    carregarProfissionais();  
+                    $('#cadastroProfissional')[0].reset();  
+                },
+                error: function () {
+                
+                    alert('Erro ao cadastrar profissional.');
+                }
+            });
+        });
+
+        function editarProfissional(id) {
+            $.get(`${apiUrl}/${id}`, function (data) {
+                $('#nomeEdit').val(data.nome);
+                $('#especialidadeEdit').val(data.especialidadeId);
+                $('#numeroDocumentoEdit').val(data.numeroDocumento);
+
+                $('#modalEdicao').modal('show');
+
+                $('#salvarEdicao').off('click').on('click', function () {
+                    const profissionalEditado = {
+                        nome: $('#nomeEdit').val(),
+                        especialidadeId: $('#especialidadeEdit').val(),
+                        especialidade:body,
+                        numeroDocumento: $('#numeroDocumentoEdit').val()
+                    };
+
+                    $.ajax({
+                        url: `${apiUrl}/${id}`,
+                        method: 'PUT',
+                        contentType: 'application/json',
+                        data: JSON.stringify(profissionalEditado),
+                        success: function () {
+                            alert('Profissional atualizado com sucesso!');
+                            carregarProfissionais();
+                            $('#modalEdicao').modal('hide');
+                        },
+                        error: function () {
+                            alert('Erro ao atualizar profissional.');
+                        }
+                    });
+                });
+            });
+        }
+
+        // Função para excluir um profissional
+        function excluirProfissional(id) {
+            if (confirm('Tem certeza que deseja excluir este profissional?')) {
+                $.ajax({
+                    url: `${apiUrl}/${id}`,
+                    method: 'DELETE',
+                    success: function () {
+                        alert('Profissional excluído com sucesso!');
+                        carregarProfissionais();
+                    },
+                    error: function () {
+                        alert('Erro ao excluir profissional.');
+                    }
+                });
+            }
+        }
+
+        // Carregar especialidades e profissionais ao carregar a página
+        $(document).ready(function () {
+            //carregarEspecialidades();
+            carregarProfissionais();
+        });
+    </script>
+</body>
+</html>
