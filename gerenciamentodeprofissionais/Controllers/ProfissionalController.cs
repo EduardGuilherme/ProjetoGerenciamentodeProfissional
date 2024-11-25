@@ -9,6 +9,7 @@ namespace gerenciamentodeprofissionais.Controllers
     public class ProfissionalController : ControllerBase
     {
         private readonly IProfissionalRepository _profissionalRepository;
+       
 
         public ProfissionalController(IProfissionalRepository profissionalRepository)
         {
